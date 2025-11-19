@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Lesson, Question, QuestionType } from '../types';
-import { getRandomQuestions } from '../services/quizService';
+import { generateQuestions } from '../services/quizService';
 
 interface QuizScreenProps {
   lesson: Lesson;
@@ -10,7 +10,8 @@ interface QuizScreenProps {
 }
 
 const QuizScreen: React.FC<QuizScreenProps> = ({ lesson, onQuizComplete, onGoHome }) => {
-  const questions = useMemo(() => getRandomQuestions(lesson.id, 10), [lesson.id]);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(true);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [typedAnswer, setTypedAnswer] = useState('');
@@ -18,10 +19,20 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ lesson, onQuizComplete, onGoHom
   const [isAnswered, setIsAnswered] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
 
-  const currentQuestion: Question = questions[currentQuestionIndex];
+  useEffect(() => {
+    const loadQuestions = async () => {
+      setLoading(true);
+      const generated = await generateQuestions(lesson, 10);
+      setQuestions(generated);
+      setLoading(false);
+    };
+    loadQuestions();
+  }, [lesson]);
+
+  const currentQuestion: Question | undefined = questions[currentQuestionIndex];
 
   const handleAnswer = (answer: string) => {
-    if (isAnswered) return;
+    if (isAnswered || !currentQuestion) return;
 
     const correct = answer.toLowerCase().trim() === currentQuestion.correctAnswer.toLowerCase().trim();
     setIsCorrect(correct);
@@ -32,6 +43,8 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ lesson, onQuizComplete, onGoHom
   };
 
   const handleNext = () => {
+    if (!currentQuestion) return;
+
     if (currentQuestion.type === QuestionType.FillInTheBlank && !isAnswered) {
         handleAnswer(typedAnswer);
         return; // Show feedback first
@@ -52,7 +65,7 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ lesson, onQuizComplete, onGoHom
     if (!isAnswered) {
       return "bg-slate-700 hover:bg-slate-600";
     }
-    if (option === currentQuestion.correctAnswer) {
+    if (currentQuestion && option === currentQuestion.correctAnswer) {
       return "bg-green-600";
     }
     if (option === selectedAnswer) {
@@ -61,6 +74,24 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ lesson, onQuizComplete, onGoHom
     return "bg-slate-700 opacity-50";
   };
   
+  if (loading) {
+    return (
+      <div className="bg-slate-800 p-12 rounded-2xl shadow-2xl w-full flex flex-col items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-cyan-400 mb-6"></div>
+        <p className="text-xl text-slate-300 animate-pulse">Generating specific questions for {lesson.subtitle}...</p>
+      </div>
+    );
+  }
+
+  if (!currentQuestion) {
+    return (
+       <div className="bg-slate-800 p-8 rounded-2xl shadow-2xl text-center">
+         <h3 className="text-xl text-red-400 mb-4">Failed to load questions.</h3>
+         <button onClick={onGoHome} className="bg-slate-600 text-white px-4 py-2 rounded">Go Back</button>
+       </div>
+    );
+  }
+
   const progressPercentage = ((currentQuestionIndex + 1) / questions.length) * 100;
 
   return (

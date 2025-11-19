@@ -13,13 +13,13 @@ export interface Lesson {
 }
 
 export enum QuestionType {
-  MultipleChoice,
-  FillInTheBlank,
+  MultipleChoice = "MultipleChoice",
+  FillInTheBlank = "FillInTheBlank",
 }
 
 export interface Question {
-  id: number;
-  lessonId: number;
+  id?: number;
+  lessonId?: number;
   type: QuestionType;
   questionText: string;
   options?: string[];
@@ -28,8 +28,8 @@ export interface Question {
 }
 
 export interface ListeningPrompt {
-    id: number;
-    lessonId: number;
+    id?: number;
+    lessonId?: number;
     text: string;
     type: 'word' | 'sentence';
 }

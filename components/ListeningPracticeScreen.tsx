@@ -1,7 +1,7 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Lesson, ListeningPrompt } from '../types';
-import { getListeningPromptsForLesson } from '../services/quizService';
+import { generateListeningPrompts } from '../services/quizService';
 
 interface ListeningPracticeScreenProps {
   lesson: Lesson;
@@ -17,10 +17,21 @@ const SpeakerIcon: React.FC<{className?: string}> = ({className}) => (
 
 
 const ListeningPracticeScreen: React.FC<ListeningPracticeScreenProps> = ({ lesson, onGoHome }) => {
-  const prompts = useMemo(() => getListeningPromptsForLesson(lesson.id), [lesson.id]);
+  const [prompts, setPrompts] = useState<ListeningPrompt[]>([]);
+  const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userInput, setUserInput] = useState('');
   const [feedback, setFeedback] = useState<{ message: string; type: 'correct' | 'incorrect' | 'info' } | null>(null);
+
+  useEffect(() => {
+      const loadPrompts = async () => {
+          setLoading(true);
+          const generated = await generateListeningPrompts(lesson);
+          setPrompts(generated);
+          setLoading(false);
+      };
+      loadPrompts();
+  }, [lesson]);
 
   const currentPrompt = prompts[currentIndex];
 
@@ -51,6 +62,24 @@ const ListeningPracticeScreen: React.FC<ListeningPracticeScreenProps> = ({ lesso
           setFeedback({ message: "You've completed this lesson!", type: 'info' });
       }
   };
+
+  if (loading) {
+      return (
+        <div className="bg-slate-800 p-12 rounded-2xl shadow-2xl w-full flex flex-col items-center justify-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-emerald-400 mb-6"></div>
+          <p className="text-xl text-slate-300 animate-pulse">Preparing listening exercises...</p>
+        </div>
+      );
+  }
+
+  if (!currentPrompt) {
+      return (
+         <div className="bg-slate-800 p-8 rounded-2xl shadow-2xl text-center">
+           <h3 className="text-xl text-red-400 mb-4">No prompts available.</h3>
+           <button onClick={onGoHome} className="bg-slate-600 text-white px-4 py-2 rounded">Go Back</button>
+         </div>
+      );
+  }
 
   return (
     <div className="bg-slate-800 p-6 md:p-8 rounded-2xl shadow-2xl w-full text-center">
