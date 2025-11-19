@@ -1,5 +1,6 @@
+
 # Name of your workflow
-name: Deploy Next.js site to GitHub Pages
+name: Deploy Vite site to GitHub Pages
 
 on:
   # Runs on pushes targeting the `main` branch
@@ -16,7 +17,6 @@ permissions:
   id-token: write
 
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
   group: 'pages'
   cancel-in-progress: false
@@ -27,21 +27,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4 # Updated from v3
+        uses: actions/checkout@v4
+
       - name: Setup Node
-        uses: actions/setup-node@v4 # Updated from v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          # Removed cache: 'npm' to avoid error when package-lock.json is missing
+
       - name: Install dependencies
-        run: npm ci
-      - name: Build with Next.js
+        # Using 'npm install' instead of 'npm ci' generates the lockfile if it's missing
+        run: npm install
+
+      - name: Build
         run: npm run build
+
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3 # Updated from v2
+        uses: actions/upload-pages-artifact@v3
         with:
-          # This is the directory where Next.js exports the static site
-          path: ./out
+          # Vite defaults to 'dist'. Next.js defaults to 'out'.
+          # Changed to 'dist' based on your project structure.
+          path: ./dist
 
   # Deployment job
   deploy:
@@ -53,4 +59,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4 # Updated from v2
+        uses: actions/deploy-pages@v4
