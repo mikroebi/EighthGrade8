@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react()],
   // Base URL is required for GitHub Pages (repository name)
   base: '/EighthGrade8/',
+  
   define: {
     // Polyfill process.env for browser environment to prevent crashes
     'process.env': {
